@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sexy Minions</title>
+  <meta name="description" content="Draw and vote on sexy minions!" />
+  <link rel="icon" href="img/favicon.ico" type="image/x-icon" />
+  <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One:wght@400&display=swap" rel="stylesheet">
+  <style>
+    .funny-font { font-family: 'Fredoka One', cursive; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; border-radius: 1rem; padding: 0.75rem 1.5rem; font-weight: 600; transition: all 150ms cubic-bezier(0.4,0,0.2,1); cursor: pointer; }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary { background-color: #fbbf24; color: #000; border: 2px solid #f59e0b; }
+    .btn-primary:hover { background-color: #f59e0b; }
+    .btn-secondary { background-color: #3b82f6; color: #fff; border: 2px solid #2563eb; }
+    .btn-secondary:hover { background-color: #2563eb; }
+    .icon-btn { width: 3rem; height: 3rem; display: flex; align-items: center; justify-content: center; border-radius: 0.75rem; transition: all 150ms cubic-bezier(0.4,0,0.2,1); border: 2px solid #e5e7eb; background: #f9fafb; }
+    .icon-btn:hover { background-color: #e5e7eb; transform: scale(1.05); }
+    .route-hidden { display: none !important; }
+    .drawing-canvas { border: 3px solid #fbbf24; border-radius: 1rem; background: white; }
+    .color-btn { width: 2.5rem; height: 2.5rem; border-radius: 50%; border: 2px solid #000; cursor: pointer; transition: transform 150ms; }
+    .color-btn:hover, .color-btn.active { transform: scale(1.2); border-width: 3px; }
+    .minion-card { border: 3px solid #fbbf24; border-radius: 1rem; background: white; padding: 1rem; transition: all 150ms; }
+    .minion-card:hover { transform: translateY(-4px); box-shadow: 0 8px 25px rgba(251, 191, 36, 0.3); }
+    .spotlight { position: relative; }
+    .spotlight::before { content: ''; position: absolute; top: -20px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent; border-top: 20px solid #fbbf24; }
+    .spotlight::after { content: '👑'; position: absolute; top: -45px; left: 50%; transform: translateX(-50%); font-size: 1.5rem; }
+    
+    /* Falling Banana Animations */
+    .banana-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: -1; overflow: hidden; }
+    .falling-banana { position: absolute; width: 30px; height: 30px; opacity: 0.7; }
+    @keyframes fall { 0% { transform: translateY(-200px) rotate(0deg); } 100% { transform: translateY(calc(100vh + 100px)) rotate(360deg); } }
+    @keyframes fall-slow { 0% { transform: translateY(-250px) rotate(0deg); } 100% { transform: translateY(calc(100vh + 100px)) rotate(720deg); } }
+    @keyframes fall-fast { 0% { transform: translateY(-150px) rotate(0deg); } 100% { transform: translateY(calc(100vh + 100px)) rotate(180deg); } }
+    .banana-1 { animation: fall 8s linear infinite; left: 10%; animation-delay: -2s; }
+    .banana-2 { animation: fall-slow 12s linear infinite; left: 25%; animation-delay: -6s; }
+    .banana-3 { animation: fall 10s linear infinite; left: 40%; animation-delay: -4s; }
+    .banana-4 { animation: fall-fast 6s linear infinite; left: 55%; animation-delay: -1s; }
+    .banana-5 { animation: fall-slow 14s linear infinite; left: 70%; animation-delay: -8s; }
+    .banana-6 { animation: fall 9s linear infinite; left: 85%; animation-delay: -3s; }
+    
+    /* Circular color input swatch */
+    #customColor { border-radius: 9999px; overflow: hidden; background: none; }
+    #customColor::-webkit-color-swatch-wrapper { padding: 0; border-radius: 9999px; }
+    #customColor::-webkit-color-swatch { border: none; border-radius: 9999px; }
+    #customColor::-moz-color-swatch { border: none; border-radius: 9999px; }
+    #customColor::-moz-focus-inner { border: 0; padding: 0; }
+    
+  </style>
+</head>
+<body class="min-h-screen bg-yellow-400 text-black selection:bg-yellow-600 selection:text-white">
+  <!-- Falling Bananas Background Animation -->
+  <div class="banana-container">
+    <img src="images/banana.png" alt="Banana" class="falling-banana banana-1">
+    <img src="images/banana.png" alt="Banana" class="falling-banana banana-2">
+    <img src="images/banana.png" alt="Banana" class="falling-banana banana-3">
+    <img src="images/banana.png" alt="Banana" class="falling-banana banana-4">
+    <img src="images/banana.png" alt="Banana" class="falling-banana banana-5">
+    <img src="images/banana.png" alt="Banana" class="falling-banana banana-6">
+  </div>
+
+  <!-- LANDING PAGE -->
+  <main id="route-landing" class="route route-hidden min-h-screen flex flex-col">
+    <!-- Social Media Links (Top Left) -->
+    <div class="absolute top-4 left-4 flex gap-3" style="z-index: 10;">
+      <a id="xLink" href="https://x.com" target="_blank" rel="noopener" class="icon-btn" title="X.com">
+        <img src="images/x.png" alt="X" class="w-10 h-10 object-contain">
+      </a>
+      <a id="dexscreenerLink" href="https://dexscreener.com" target="_blank" rel="noopener" class="icon-btn" title="Dexscreener.com">
+        <img src="images/dex.png" alt="Dexscreener" class="w-12 h-12 object-contain">
+      </a>
+      <a id="pumpfunLink" href="https://pump.fun/board" target="_blank" rel="noopener" class="icon-btn" title="Pump.fun/board">
+        <img src="images/pump.png" alt="Pump.fun" class="w-10 h-10 object-contain">
+      </a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col items-center justify-center px-4 relative">
+        <!-- Title -->
+        <div class="text-center mb-4">
+          <img src="images/title.png" alt="Sexy Minions" class="mx-auto w-full h-auto" style="max-height: 600px;" onload="this.style.maxHeight = window.innerWidth > 768 ? '800px' : '600px'">
+        </div>
+
+        <!-- Contract Address Box -->
+        <div class="flex justify-center mb-8">
+          <div class="bg-white bg-opacity-90 border-2 border-black rounded-lg px-4 py-2 flex items-center gap-3 shadow-lg">
+            <span class="font-bold text-black">CA: coming soon</span>
+            <button id="copyCABtn" class="bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-3 py-1 rounded border-2 border-black transition-colors" onclick="copyCA()">
+              Copy
+            </button>
+          </div>
+        </div>
+
+      <!-- Main Buttons -->
+      <div class="flex flex-col sm:flex-row gap-6 relative">
+        <button id="drawBtn" class="btn btn-primary text-xl px-8 py-4 font-bold" onclick="console.log('Draw clicked'); showRoute('draw');">
+          Draw your sexy minion
+        </button>
+        <button id="leaderboardBtn" class="btn btn-secondary text-xl px-8 py-4 font-bold" onclick="console.log('Leaderboard clicked'); showRoute('leaderboard');">
+          Leaderboard
+        </button>
+        
+        <!-- Right side image aligned with leaderboard button bottom -->
+        <img src="images/sexy2.png" alt="Sexy Minion 2" class="absolute right-0 bottom-0 hidden sm:block" style="transform: translateX(250%);">
+      </div>
+    </div>
+  </main>
+
+  <!-- DRAWING PAGE -->
+  <main id="route-draw" class="route route-hidden min-h-screen bg-yellow-400">
+    <div class="container mx-auto px-4 py-8">
+      <!-- Back Button -->
+      <button id="backToHomeBtn" class="btn btn-secondary mb-6" onclick="showRoute('landing')">
+        ← Back to Home
+      </button>
+
+      <!-- Drawing Canvas Section -->
+      <div class="flex flex-col items-center">
+        <h2 class="funny-font text-4xl text-yellow-400 mb-6">Draw Your Sexy Minion!</h2>
+        
+        <!-- Image above canvas -->
+        <img src="images/sexy1.png" alt="Sexy Minion" class="mb-0">
+        
+        <!-- Canvas -->
+        <canvas id="drawingCanvas" class="drawing-canvas mb-6" width="400" height="400"></canvas>
+        
+        <!-- Drawing Tools -->
+        <div class="flex flex-col items-center gap-4 mb-6">
+          <!-- Color Palette and Eraser -->
+          <div class="flex gap-3">
+            <div class="color-btn active" data-color="#FFD700" style="background-color: #FFD700;" title="Yellow"></div>
+            <div class="color-btn" data-color="#000000" style="background-color: #000000;" title="Black"></div>
+            <div class="color-btn" data-color="#FFFFFF" style="background-color: #FFFFFF; border-color: #ccc;" title="White"></div>
+            <div class="color-btn" data-color="#3B82F6" style="background-color: #3B82F6;" title="Blue"></div>
+            <div class="color-btn" data-color="#EF4444" style="background-color: #EF4444;" title="Red"></div>
+            <div class="color-btn eraser-btn" data-color="erase" style="background: linear-gradient(45deg, #ff6b6b, #ffd93d); position: relative;" title="Eraser">
+              <span style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.8rem; font-weight: bold;">E</span>
+          </div>
+        </div>
+
+          <!-- Custom Color Picker -->
+          <div class="flex items-center gap-3">
+            <label for="customColor" class="text-sm font-medium">Select Color:</label>
+            <input id="customColor" type="color" value="#FFD700" class="w-10 h-10 p-0 border-2 border-black rounded-full overflow-hidden appearance-none" style="-webkit-appearance: none; border-radius: 9999px;" />
+          </div>
+
+          <!-- Brush Size -->
+          <div class="flex items-center gap-3">
+            <label class="text-sm font-medium">Brush Size:</label>
+            <input type="range" id="brushSize" min="1" max="20" value="5" class="w-32">
+            <span id="brushSizeDisplay" class="text-sm">5px</span>
+        </div>
+
+          <!-- Clear Canvas -->
+          <button id="clearCanvas" class="btn btn-secondary" onclick="clearCanvasGlobal()">Clear Canvas</button>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-4">
+          <button id="submitDrawing" class="btn btn-primary text-lg px-6 py-3 font-bold" onclick="document.getElementById('artistModal').classList.remove('hidden')">
+            Submit your sexy minion
+          </button>
+          <button id="goToLeaderboard" class="btn btn-secondary text-lg px-6 py-3 font-bold" onclick="showRoute('leaderboard')">
+            Leaderboard
+          </button>
+          </div>
+        </div>
+    </div>
+  </main>
+
+  <!-- LEADERBOARD PAGE -->
+  <main id="route-leaderboard" class="route route-hidden min-h-screen bg-yellow-400">
+    <div class="container mx-auto px-4 py-8">
+      <!-- Back Button -->
+      <button id="backToHomeFromLeaderboard" class="btn btn-secondary mb-6" onclick="showRoute('landing')">
+        ← Back to Home
+      </button>
+
+      <!-- Leaderboard Header -->
+      <div class="text-center mb-8">
+        <h2 class="funny-font text-5xl text-yellow-400 mb-4">Sexy Minions Leaderboard</h2>
+        <p class="text-lg text-gray-600">Vote for the sexiest minion!</p>
+          </div>
+
+      <!-- Minion Gallery -->
+      <div id="minionGallery" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Minion cards will be dynamically inserted here -->
+        </div>
+
+      <!-- No drawings message -->
+      <div id="noDrawings" class="text-center py-12 hidden">
+        <p class="text-xl text-gray-500 mb-4">No minions drawn yet!</p>
+        <button class="btn btn-primary" onclick="showRoute('draw')">
+          🎨 Be the first to draw a sexy minion
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Artist Name Modal -->
+  <div id="artistModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <div class="bg-white rounded-xl p-6 max-w-sm w-full mx-4">
+      <h3 class="text-xl font-bold mb-4 text-center">Artist Name</h3>
+      <input id="artistName" type="text" placeholder="Anonymous" value="Anonymous" 
+             class="w-full border-2 border-gray-300 rounded-lg px-3 py-2 mb-4 focus:border-yellow-400 outline-none">
+      <input id="walletAddress" type="text" placeholder="Wallet address" 
+             class="w-full border-2 border-gray-300 rounded-lg px-3 py-2 mb-4 focus:border-yellow-400 outline-none" required>
+      <div class="flex gap-3">
+        <button id="cancelSubmit" class="btn btn-secondary flex-1" onclick="document.getElementById('artistModal').classList.add('hidden')">Cancel</button>
+        <button id="confirmSubmit" class="btn btn-primary flex-1" onclick="submitDrawingGlobal()">Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-4 right-4 text-sm bg-yellow-400 text-black rounded-xl px-4 py-2 shadow-xl hidden font-medium">Success!</div>
+
+  <!-- Global functions -->
+  <script>
+    // ======== Global Routing ========
+    const routes = {
+      landing: null,
+      draw: null,
+      leaderboard: null,
+    };
+
+    function showRoute(routeName) {
+      console.log(`Showing route: ${routeName}`);
+      
+      // Initialize routes if not done yet
+      if (!routes.landing) {
+        routes.landing = document.getElementById('route-landing');
+        routes.draw = document.getElementById('route-draw');
+        routes.leaderboard = document.getElementById('route-leaderboard');
+      }
+      
+      console.log('Available routes:', Object.keys(routes));
+      
+      // Hide all routes first
+      for (const k of Object.keys(routes)) {
+        const element = routes[k];
+        if (element) {
+          element.classList.add('route-hidden');
+          console.log(`${k} hidden`);
+        }
+      }
+      
+      // Show the requested route
+      const targetRoute = routes[routeName];
+      if (targetRoute) {
+        targetRoute.classList.remove('route-hidden');
+        console.log(`${routeName} shown`);
+      } else {
+        console.error(`Route ${routeName} not found`);
+      }
+    }
+
+    // Show landing page by default when DOM loads
+    document.addEventListener('DOMContentLoaded', () => {
+      showRoute('landing');
+    });
+
+    // Global function for submitting drawing
+    async function submitDrawingGlobal() {
+      const confirmBtn = document.getElementById('confirmSubmit');
+      const canvas = document.getElementById('drawingCanvas');
+      const artistInput = document.getElementById('artistName');
+      const walletInput = document.getElementById('walletAddress');
+      const modal = document.getElementById('artistModal');
+      
+      if (!canvas) {
+        console.error('Canvas not found');
+        return;
+      }
+      
+      try {
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Submitting...';
+        
+        // Validate wallet address required
+        const wallet = (walletInput?.value || '').trim();
+        if (!wallet) {
+          window.showToast && window.showToast('Wallet address is required');
+          throw new Error('wallet-required');
+        }
+        
+        // Call the Firebase function if available
+        if (window.submitDrawingToFirebase) {
+          await window.submitDrawingToFirebase();
+        } else {
+          console.error('submitDrawingToFirebase not available');
+        }
+        
+        modal.classList.add('hidden');
+      } catch (error) {
+        console.error('Submission error:', error);
+      } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Submit';
+      }
+    }
+
+    // Global function for clearing canvas
+    function clearCanvasGlobal() {
+      if (window.clearCanvasFunction) {
+        window.clearCanvasFunction();
+      } else {
+        console.error('clearCanvasFunction not available');
+      }
+    }
+
+    // Global function for copying contract address
+    function copyCA() {
+      const textToCopy = "coming soon";
+      
+      // Use the modern Clipboard API
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(textToCopy).then(() => {
+          showCopySuccess();
+        }).catch((err) => {
+          console.error('Failed to copy: ', err);
+          fallbackCopy(textToCopy);
+        });
+      } else {
+        // Fallback for older browsers
+        fallbackCopy(textToCopy);
+      }
+    }
+
+    // Fallback copy method for older browsers
+    function fallbackCopy(text) {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        showCopySuccess();
+      } catch (err) {
+        console.error('Fallback copy failed: ', err);
+      }
+      document.body.removeChild(textArea);
+    }
+
+    // Show copy success feedback
+    function showCopySuccess() {
+      const button = document.getElementById('copyCABtn');
+      const originalText = button.textContent;
+      
+      button.textContent = 'Copied!';
+      button.style.backgroundColor = '#10b981';
+      
+      setTimeout(() => {
+        button.textContent = originalText;
+        button.style.backgroundColor = '#fbbf24';
+      }, 1500);
+      
+      // Also show toast if available
+      if (window.showToast) {
+        window.showToast('Contract address copied!');
+      }
+    }
+  </script>
+
+  <!-- Firebase + App Logic -->
+  <script type="module">
+    // ======== CONFIG ========
+    const LINKS = {
+      pumpfun: "https://pump.fun/board",
+      dexscreener: "https://dexscreener.com",
+      xProfile: "https://x.com"
+    };
+
+    // ======== Firebase Setup (fill with your project's config) ========
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, runTransaction, serverTimestamp, collection, getDocs, query, limit, increment, orderBy, addDoc } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+    import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
+
+    const firebaseConfig = {
+    apiKey: "AIzaSyDVdWBCncOEsJpYoqgmYuHujxG4ZhlORkQ",
+    authDomain: "sexyminions-69a76.firebaseapp.com",
+    projectId: "sexyminions-69a76",
+    storageBucket: "sexyminions-69a76.firebasestorage.app",
+    messagingSenderId: "327087304337",
+    appId: "1:327087304337:web:e68f4e3e50f50e8288d930",
+    measurementId: "G-1Z5ES2CM94"
+  };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
+    // ======== DOM Elements ========
+    // Landing page
+    const drawBtn = document.getElementById('drawBtn');
+    const leaderboardBtn = document.getElementById('leaderboardBtn');
+    
+    // Drawing page
+    const drawingCanvas = document.getElementById('drawingCanvas');
+    const backToHomeBtn = document.getElementById('backToHomeBtn');
+    const brushSize = document.getElementById('brushSize');
+    const brushSizeDisplay = document.getElementById('brushSizeDisplay');
+    const clearCanvas = document.getElementById('clearCanvas');
+    const submitDrawing = document.getElementById('submitDrawing');
+    const goToLeaderboard = document.getElementById('goToLeaderboard');
+    const customColor = document.getElementById('customColor');
+    
+    // Leaderboard page
+    const backToHomeFromLeaderboard = document.getElementById('backToHomeFromLeaderboard');
+    const minionGallery = document.getElementById('minionGallery');
+    const noDrawings = document.getElementById('noDrawings');
+    
+    // Modal
+    const artistModal = document.getElementById('artistModal');
+    const artistName = document.getElementById('artistName');
+    const cancelSubmit = document.getElementById('cancelSubmit');
+    const confirmSubmit = document.getElementById('confirmSubmit');
+    
+    // Social links
+    const xLink = document.getElementById('xLink');
+    const dexscreenerLink = document.getElementById('dexscreenerLink');
+    const pumpfunLink = document.getElementById('pumpfunLink');
+    const toast = document.getElementById('toast');
+
+    // Set up social links
+    xLink.href = LINKS.xProfile;
+    dexscreenerLink.href = LINKS.dexscreener;
+    pumpfunLink.href = LINKS.pumpfun;
+
+    function showToast(txt){
+      toast.textContent = txt;
+      toast.classList.remove('hidden');
+      setTimeout(()=> toast.classList.add('hidden'), 2000);
+    }
+
+    // ======== App State ========
+    let uid = null;
+    let resolveAuthReady;
+    const authReady = new Promise((res) => { resolveAuthReady = res; });
+    function authReadyWithTimeout(ms = 2000) {
+      return Promise.race([
+        authReady,
+        new Promise((res) => setTimeout(res, ms))
+      ]);
+    }
+    
+    // Drawing canvas state
+    let ctx = null;
+    let isDrawing = false;
+    let currentColor = '#FFD700';
+    let currentBrushSize = 5;
+    let isErasing = false;
+
+    // Initialize when DOM is loaded
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+
+    // auth first (ensure persistence, then sign in)
+    setPersistence(auth, browserLocalPersistence)
+      .then(() => signInAnonymously(auth))
+      .catch((e) => { console.error('Auth init failed:', e); });
+    onAuthStateChanged(auth, async (u) => {
+      if (!u) { console.warn('Auth state: no user'); return; }
+      uid = u.uid;
+      console.log('uid', uid);
+      if (resolveAuthReady) { resolveAuthReady(); resolveAuthReady = null; }
+    });
+
+    async function init(){
+      console.log('Initializing app...');
+      setupEventListeners();
+      setupCanvas();
+      // Wait briefly for auth, but don't block indefinitely
+      try { await authReadyWithTimeout(2000); } catch(e) {}
+      loadLeaderboard();
+    }
+
+    // ======== Event Listeners ========
+    function setupEventListeners() {
+      console.log('Setting up event listeners...');
+      
+      // Check if elements exist
+      console.log('drawBtn:', drawBtn);
+      console.log('leaderboardBtn:', leaderboardBtn);
+      
+      // Navigation
+      if (drawBtn) {
+        drawBtn.addEventListener('click', () => {
+          console.log('Draw button clicked');
+          showRoute('draw');
+        });
+      }
+      
+      if (leaderboardBtn) {
+        leaderboardBtn.addEventListener('click', () => {
+          console.log('Leaderboard button clicked');
+          showRoute('leaderboard');
+        });
+      }
+      
+      if (backToHomeBtn) {
+        backToHomeBtn.addEventListener('click', () => showRoute('landing'));
+      }
+      
+      if (backToHomeFromLeaderboard) {
+        backToHomeFromLeaderboard.addEventListener('click', () => showRoute('landing'));
+      }
+      
+      if (goToLeaderboard) {
+        goToLeaderboard.addEventListener('click', () => showRoute('leaderboard'));
+      }
+      
+      // Drawing controls
+      if (brushSize && brushSizeDisplay) {
+        brushSize.addEventListener('input', (e) => {
+          currentBrushSize = e.target.value;
+          brushSizeDisplay.textContent = `${currentBrushSize}px`;
+        });
+      }
+      
+      if (clearCanvas) {
+        clearCanvas.addEventListener('click', () => {
+          if (ctx) {
+            ctx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+          }
+        });
+      }
+      
+      // Color selection buttons
+      document.querySelectorAll('.color-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelector('.color-btn.active')?.classList.remove('active');
+          btn.classList.add('active');
+          
+          if (btn.dataset.color === 'erase') {
+            isErasing = true;
+            console.log('Eraser mode activated');
+        } else {
+            isErasing = false;
+            currentColor = btn.dataset.color;
+            console.log('Drawing mode activated with color:', currentColor);
+          }
+        });
+      });
+      
+      // Color wheel picker
+      if (customColor) {
+        // Keep wheel in sync when palette buttons clicked
+        document.querySelectorAll('.color-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            if (btn.dataset.color && btn.dataset.color !== 'erase') {
+              customColor.value = btn.dataset.color;
+            }
+          });
+        });
+        // Update drawing color when wheel changes
+        customColor.addEventListener('input', (e) => {
+          isErasing = false;
+          currentColor = e.target.value;
+          const activeBtn = document.querySelector('.color-btn.active');
+          if (activeBtn) activeBtn.classList.remove('active');
+        });
+      }
+      
+      // Drawing submission
+      if (submitDrawing && artistModal) {
+        submitDrawing.addEventListener('click', () => {
+          artistModal.classList.remove('hidden');
+        });
+      }
+      
+      if (cancelSubmit && artistModal) {
+        cancelSubmit.addEventListener('click', () => {
+          artistModal.classList.add('hidden');
+        });
+      }
+    }
+
+    // ======== Canvas Setup ========
+    function setupCanvas() {
+      const drawingCanvas = document.getElementById('drawingCanvas');
+      ctx = drawingCanvas.getContext('2d');
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      
+      // Set white background
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+      
+      // Mouse events
+      drawingCanvas.addEventListener('mousedown', startDrawing);
+      drawingCanvas.addEventListener('mousemove', draw);
+      drawingCanvas.addEventListener('mouseup', stopDrawing);
+      drawingCanvas.addEventListener('mouseout', stopDrawing);
+      
+      // Touch events for mobile
+      drawingCanvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = drawingCanvas.getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        startDrawing({offsetX: x, offsetY: y});
+      });
+      
+      drawingCanvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = drawingCanvas.getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        draw({offsetX: x, offsetY: y});
+      });
+      
+      drawingCanvas.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        stopDrawing();
+      });
+    }
+    
+    function startDrawing(e) {
+      isDrawing = true;
+      ctx.beginPath();
+      ctx.moveTo(e.offsetX, e.offsetY);
+    }
+    
+    function draw(e) {
+      if (!isDrawing) return;
+      
+      ctx.lineWidth = currentBrushSize;
+      
+      if (isErasing) {
+        // Eraser mode - use destination-out composite operation
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.strokeStyle = 'rgba(0,0,0,1)'; // Color doesn't matter in destination-out mode
+      } else {
+        // Normal drawing mode
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = currentColor;
+      }
+      
+      ctx.lineTo(e.offsetX, e.offsetY);
+      ctx.stroke();
+    }
+    
+    function stopDrawing() {
+      isDrawing = false;
+    }
+
+    // ======== Drawing Submission ========
+    async function submitDrawingToFirebase() {
+      // Get DOM elements directly
+      const canvas = document.getElementById('drawingCanvas');
+      const artistInput = document.getElementById('artistName');
+      const walletInput = document.getElementById('walletAddress');
+      
+      if (!canvas || !artistInput) {
+        console.error('Required elements not found');
+        return;
+      }
+      
+      const walletAddress = (walletInput?.value || '').trim();
+      if (!walletAddress) {
+        window.showToast && window.showToast('Wallet address is required');
+        throw new Error('wallet-required');
+      }
+      
+      if (!uid) {
+        try { await authReady; } catch(e) {}
+        if (!uid) { 
+          window.showToast && window.showToast('Please wait for authentication...');
+          return; 
+        }
+      }
+      
+      try {
+        // Convert canvas to blob
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
+        
+        if (!blob) {
+          throw new Error('Failed to create image from canvas');
+        }
+        
+        // Upload to storage
+        const artistNameValue = artistInput.value.trim() || 'Anonymous';
+        const timestamp = Date.now();
+        const path = `minions/${timestamp}-${artistNameValue.toLowerCase().replace(/[^a-z0-9]+/g,'-')}.jpg`;
+        const storageRef = sRef(storage, path);
+        await uploadBytes(storageRef, blob, { contentType: 'image/jpeg' });
+        const url = await getDownloadURL(storageRef);
+        
+        // Save to Firestore
+        await addDoc(collection(db, 'minions'), {
+          artistName: artistNameValue,
+          walletAddress: walletAddress,
+          imageUrl: url,
+          storagePath: path,
+          voteCount: 0,
+          createdAt: serverTimestamp()
+        });
+        
+        // Show success message
+        if (window.showToast) {
+          window.showToast('Minion submitted successfully!');
+        }
+        
+        // Clear canvas and reset form
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        artistInput.value = 'Anonymous';
+        if (walletInput) walletInput.value = '';
+        
+        // Go to leaderboard
+        if (window.showRoute) {
+          window.showRoute('leaderboard');
+        }
+        loadLeaderboard();
+        
+      } catch(e) {
+        console.error('Submission error:', e);
+        if (window.showToast) {
+          window.showToast('Submission failed. Please try again.');
+        }
+      }
+    }
+
+    // ======== Leaderboard ========
+    async function loadLeaderboard() {
+      try {
+        const qSnap = await getDocs(query(collection(db, 'minions'), orderBy('voteCount', 'desc')));
+        
+        if (qSnap.empty) {
+          noDrawings.classList.remove('hidden');
+          minionGallery.innerHTML = '';
+          return;
+        }
+        
+        noDrawings.classList.add('hidden');
+        minionGallery.innerHTML = '';
+        
+        let isFirst = true;
+        qSnap.forEach(doc => {
+          const data = doc.data();
+          const minionCard = createMinionCard(doc.id, data, isFirst);
+          minionGallery.appendChild(minionCard);
+          isFirst = false;
+        });
+        
+      } catch(e) {
+        console.error('Error loading leaderboard:', e);
+        if (e && (e.code === 'permission-denied' || String(e).includes('PERMISSION_DENIED'))) {
+          showToast('Permission denied: check Firestore rules/Auth domain');
+        } else {
+          showToast('Failed to load leaderboard');
+        }
+      }
+    }
+    
+    function createMinionCard(id, data, isFirst) {
+      const card = document.createElement('div');
+      card.className = `minion-card ${isFirst ? 'spotlight' : ''}`;
+      
+      const totalVotes = data.voteCount || 0;
+      
+      card.innerHTML = `
+        <img src="${data.imageUrl}" alt="Minion by ${data.artistName}" class="w-full h-48 object-cover rounded-lg mb-3">
+        <div class="text-center mb-3">
+          <h3 class="font-bold text-lg">${data.artistName}</h3>
+          <p class="text-xs text-gray-500 break-all">${data.walletAddress || ''}</p>
+          <p class="text-gray-600">${totalVotes} votes</p>
+        </div>
+        <div class="flex justify-center mb-3">
+          <button class="vote-btn px-3 py-1 text-sm border rounded hover:bg-yellow-100">Vote</button>
+        </div>
+        <div class="text-center">
+          <span class="vote-status text-sm text-gray-500">Click to vote!</span>
+        </div>
+      `;
+      
+      // Add voting functionality
+      const voteButton = card.querySelector('.vote-btn');
+      const voteStatus = card.querySelector('.vote-status');
+      
+      voteButton.addEventListener('click', async () => {
+        await voteForMinion(id, voteButton, voteStatus);
+      });
+      
+      return card;
+    }
+    
+    async function voteForMinion(minionId, voteButton, statusEl) {
+      if (!uid) {
+        try { await authReady; } catch(e) {}
+        if (!uid) { showToast('Please try again'); return; }
+      }
+      
+      try {
+        // Disable button during vote
+        voteButton.disabled = true;
+        statusEl.textContent = 'Voting...';
+        
+        await runTransaction(db, async (transaction) => {
+          const voteDoc = doc(db, `minions/${minionId}/votes/${uid}`);
+          const voteSnap = await transaction.get(voteDoc);
+          
+          if (voteSnap.exists()) {
+            throw new Error('already-voted');
+          }
+          
+          const minionDoc = doc(db, 'minions', minionId);
+          const minionSnap = await transaction.get(minionDoc);
+          
+          if (!minionSnap.exists()) {
+            throw new Error('minion-not-found');
+          }
+          
+          const minionData = minionSnap.data();
+          const newVoteCount = (minionData.voteCount || 0) + 1;
+          
+          transaction.set(voteDoc, { voted: true, votedAt: serverTimestamp() });
+          transaction.update(minionDoc, {
+            voteCount: newVoteCount
+          });
+        });
+        
+        statusEl.textContent = 'Thanks for voting!';
+        statusEl.className = 'vote-status text-sm text-green-600 font-medium';
+        showToast('Vote submitted!');
+        
+        // Reload leaderboard to show updated counts
+        setTimeout(() => loadLeaderboard(), 500);
+        
+      } catch(e) {
+        if (String(e).includes('already-voted')) {
+          statusEl.textContent = 'Already voted!';
+          statusEl.className = 'vote-status text-sm text-orange-600';
+        } else {
+          console.error('Vote error:', e);
+          statusEl.textContent = 'Vote failed';
+          statusEl.className = 'vote-status text-sm text-red-600';
+          voteButton.disabled = false;
+        }
+      }
+    }
+
+    // Make functions globally available
+    window.submitDrawingToFirebase = submitDrawingToFirebase;
+    window.showRoute = showRoute;
+    
+    // Create a clear canvas function
+    window.clearCanvasFunction = function() {
+      const canvas = document.getElementById('drawingCanvas');
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+    };
+    
+    // Make showToast globally available
+    window.showToast = function(txt) {
+      const toast = document.getElementById('toast');
+      if (toast) {
+        toast.textContent = txt;
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.add('hidden'), 2000);
+      }
+    };
+  </script>
+
+  <!-- Optional: Firestore & Storage security rules (copy into Firebase console) ***
+  rules_version = '2';
+  service cloud.firestore {
+    match /databases/{database}/documents {
+      match /minions/{minionId} {
+        allow read: if true;
+        allow write: if request.auth != null; // anyone logged in anonymously can add minions
+        match /votes/{uid} {
+          allow read, write: if request.auth != null && request.auth.uid == uid;
+        }
+      }
+    }
+  }
+
+  // Storage Rules (Storage → Rules)
+  rules_version = '2';
+  service firebase.storage {
+    match /b/{bucket}/o {
+      match /minions/{allPaths=**} {
+        allow read: if true; // public read OK for demo
+        allow write: if request.auth != null && request.resource.size < 5 * 1024 * 1024 && request.resource.contentType.matches('image/.*'); // anyone (anon) can upload small images
+      }
+    }
+  }
+  *** End rules -->
+</body>
+</html>
