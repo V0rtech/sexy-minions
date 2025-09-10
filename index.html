@@ -775,7 +775,7 @@
       const totalVotes = data.voteCount || 0;
       
       card.innerHTML = `
-        <img src="${data.imageUrl}" alt="Minion by ${data.artistName}" class="w-full h-48 object-cover rounded-lg mb-3">
+        <img src="${data.imageUrl}" alt="Minion by ${data.artistName}" class="w-full aspect-square object-contain bg-white rounded-lg mb-3">
         <div class="text-center mb-3">
           <h3 class="font-bold text-lg">${data.artistName}</h3>
           <p class="text-xs text-gray-500 break-all">${data.walletAddress || ''}</p>
